@@ -4,10 +4,10 @@
 // Lecture Class: TC4L
 // Tutorial Class: T13L
 // Trimester: 2610
-// Member_1: ID | NAME | EMAIL | PHONE
-// Member_2: ID | NAME | EMAIL | PHONE
-// Member_3: ID | NAME | EMAIL | PHONE
-// Member_4: ID | NAME | EMAIL | PHONE
+// Member_1: 252UC254QT | CHIN WEI LUN | CHIN.WEI.LUN@student.mmu.edu.my | 011-39676291
+// Member_2: 252UC254QS | NG ZE JIAN | NG.ZE.JIAN@student.mmu.edu.my | 019-3589262
+// Member_3: 261uc2614r | NICHOLAS LIM KIM HONG | NICHOLAS.LIM.KIM.HONG@student.mmu.edu.my | 011-16233853
+// Member_4: 252UC254RX | THAM YU XIANG | THAM.YU.XIANG@student.mmu.edu.my | 011-10681380
 // *********************************************************
 // Task Distribution
 // Member_1:

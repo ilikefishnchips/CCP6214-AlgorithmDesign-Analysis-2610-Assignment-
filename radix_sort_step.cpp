@@ -1,5 +1,5 @@
 // *********************************************************
-// Program: heap_sort_step.cpp
+// Program: radix_sort_step.cpp
 // Course: CCP6214 Algorithm Design and Analysis
 // Lecture Class: TC4L
 // Tutorial Class: T13L
@@ -20,7 +20,6 @@
 #include <fstream>
 #include <vector>
 #include <string>
-#include <utility>
 #include <cstdint>
 using namespace std;
 
@@ -29,6 +28,7 @@ struct Element {
     string   str;     // the 5-letter string, carried along
 };
 
+// Read "integer,string" rows from the dataset file.
 bool loadDataset(const string& filename, vector<Element>& data) {
     ifstream in(filename);
     if (!in) return false;
@@ -40,12 +40,13 @@ bool loadDataset(const string& filename, vector<Element>& data) {
         Element e;
         e.key = stoull(line.substr(0, comma));
         e.str = line.substr(comma + 1);
-        if (!e.str.empty() && e.str.back() == '\r') e.str.pop_back();
+        if (!e.str.empty() && e.str.back() == '\r') e.str.pop_back(); // Windows CR
         data.push_back(e);
     }
     return true;
 }
 
+// Print the whole array as: [key/str, key/str, ...] label
 void printSnapshot(ofstream& out, const vector<Element>& a, const string& label) {
     out << "[";
     for (size_t i = 0; i < a.size(); ++i) {
@@ -55,45 +56,37 @@ void printSnapshot(ofstream& out, const vector<Element>& a, const string& label)
     out << "] " << label << "\n";
 }
 
-// Push the element at index i down until the max-heap property holds,
-// considering only positions [0, heapSize).
-void siftDown(vector<Element>& a, size_t i, size_t heapSize) {
-    while (true) {
-        size_t left    = 2 * i + 1;
-        size_t right    = 2 * i + 2;
-        size_t largest = i;
-        if (left  < heapSize && a[left].key  > a[largest].key) largest = left;
-        if (right < heapSize && a[right].key > a[largest].key) largest = right;
-        if (largest == i) break;          // parent already largest -> stop
-        swap(a[i], a[largest]);
-        i = largest;                      // follow the element down
-    }
-}
+// LSD radix sort, base 10, over the 10 decimal digits of the key.
+// Processes the rightmost digit first (labelled d=10) up to the
+// leftmost digit (labelled d=1), printing the array after each pass.
+void radixSortStep(vector<Element>& data, ofstream& out) {
+    size_t n = data.size();
+    printSnapshot(out, data, "original");
+    if (n <= 1) return;
 
-// Floyd's bottom-up build: heapify every internal node from the last
-// parent up to the root. Runs in O(n).
-void buildMaxHeap(vector<Element>& a) {
-    size_t n = a.size();
-    if (n < 2) return;
-    for (size_t i = n / 2; i-- > 0; )     // i = n/2 - 1 down to 0
-        siftDown(a, i, n);
-}
+    vector<Element> buffer(n);
+    uint64_t place = 1;                       // 1, 10, 100, ... (units first)
+    for (int d = 10; d >= 1; --d) {           // 10-digit keys => 10 passes
+        int count[10] = {0};
 
-void heapSortStep(vector<Element>& a, ofstream& out) {
-    size_t n = a.size();
-    buildMaxHeap(a);
-    printSnapshot(out, a, "initial");     // array right after building the heap
-    if (n < 2) return;
-    for (size_t i = n - 1; i >= 1; --i) {
-        swap(a[0], a[i]);                 // largest goes to the end
-        siftDown(a, 0, i);                // restore heap over the shrunk range
-        printSnapshot(out, a, "i = " + to_string(i));
+        for (size_t i = 0; i < n; ++i)        // 1) tally each digit 0..9
+            count[(data[i].key / place) % 10]++;
+
+        for (int k = 1; k < 10; ++k)          // 2) prefix sums -> end positions
+            count[k] += count[k - 1];
+
+        for (size_t i = n; i-- > 0; )         // 3) place from the back => stable
+            buffer[--count[(data[i].key / place) % 10]] = data[i];
+
+        data.swap(buffer);                    // result becomes the new input
+        printSnapshot(out, data, "d=" + to_string(d));
+        place *= 10;
     }
 }
 
 int main() {
     // ----- Input file (one active line, the rest commented) -----
-    string filename = "dataset_1000.csv";     // <-- active
+    string filename = "dataset_1000000.csv";     // <-- active
 
     // ----- Row range, 1-indexed and inclusive -----
     // long long startRow = 1, endRow = 7;
@@ -113,17 +106,18 @@ int main() {
         return 1;
     }
 
+    // Sort only the requested rows, among themselves.
     vector<Element> sub(all.begin() + (startRow - 1), all.begin() + endRow);
 
-    // Output name: dataset_<n>_heap_sorted_step_<start>_<end>.txt
+    // Output name: dataset_<n>_radix_sorted_step_<start>_<end>.txt
     string stem = filename;
     size_t dot = stem.rfind(".csv");
     if (dot != string::npos) stem = stem.substr(0, dot);
-    string outName = stem + "_heap_sorted_step_"
+    string outName = stem + "_radix_sorted_step_"
                    + to_string(startRow) + "_" + to_string(endRow) + ".txt";
 
     ofstream out(outName);
-    heapSortStep(sub, out);
+    radixSortStep(sub, out);
     out.close();
 
     cout << "Step trace written to " << outName << "\n";
